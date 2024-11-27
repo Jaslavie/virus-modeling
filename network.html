@@ -1,0 +1,321 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#0000FF", "font": {"color": "white"}, "id": "ALBANY", "label": "ALBANY", "shape": "dot", "size": 17.088122605363985, "title": "Infections: 111\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ALLEGANY", "label": "ALLEGANY", "shape": "dot", "size": 12.23499361430396, "title": "Infections: 35\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "BRONX", "label": "BRONX", "shape": "dot", "size": 59.297573435504475, "title": "Infections: 772\nRegion: NYC"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "BROOME", "label": "BROOME", "shape": "dot", "size": 14.21455938697318, "title": "Infections: 66\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "CATTARAUGUS", "label": "CATTARAUGUS", "shape": "dot", "size": 10.957854406130268, "title": "Infections: 15\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "CAYUGA", "label": "CAYUGA", "shape": "dot", "size": 21.302681992337163, "title": "Infections: 177\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "CHAUTAUQUA", "label": "CHAUTAUQUA", "shape": "dot", "size": 11.149425287356323, "title": "Infections: 18\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "CHEMUNG", "label": "CHEMUNG", "shape": "dot", "size": 14.022988505747126, "title": "Infections: 63\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "CHENANGO", "label": "CHENANGO", "shape": "dot", "size": 11.979565772669222, "title": "Infections: 31\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "CLINTON", "label": "CLINTON", "shape": "dot", "size": 11.40485312899106, "title": "Infections: 22\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "COLUMBIA", "label": "COLUMBIA", "shape": "dot", "size": 11.468710089399744, "title": "Infections: 23\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "CORTLAND", "label": "CORTLAND", "shape": "dot", "size": 10.127713920817369, "title": "Infections: 2\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "DELAWARE", "label": "DELAWARE", "shape": "dot", "size": 11.660280970625799, "title": "Infections: 26\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "DUTCHESS", "label": "DUTCHESS", "shape": "dot", "size": 11.149425287356323, "title": "Infections: 18\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ERIE", "label": "ERIE", "shape": "dot", "size": 43.84418901660281, "title": "Infections: 530\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ESSEX", "label": "ESSEX", "shape": "dot", "size": 11.277139208173692, "title": "Infections: 20\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "FRANKLIN", "label": "FRANKLIN", "shape": "dot", "size": 11.277139208173692, "title": "Infections: 20\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "FULTON", "label": "FULTON", "shape": "dot", "size": 12.68199233716475, "title": "Infections: 42\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "GENESEE", "label": "GENESEE", "shape": "dot", "size": 14.597701149425287, "title": "Infections: 72\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "GREENE", "label": "GREENE", "shape": "dot", "size": 10.8301404853129, "title": "Infections: 13\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "HAMILTON", "label": "HAMILTON", "shape": "dot", "size": 10.127713920817369, "title": "Infections: 2\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "HERKIMER", "label": "HERKIMER", "shape": "dot", "size": 18.939974457215836, "title": "Infections: 140\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "JEFFERSON", "label": "JEFFERSON", "shape": "dot", "size": 10.510855683269476, "title": "Infections: 8\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "KINGS", "label": "KINGS", "shape": "dot", "size": 60.0, "title": "Infections: 783\nRegion: NYC"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "LEWIS", "label": "LEWIS", "shape": "dot", "size": 12.80970625798212, "title": "Infections: 44\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "LIVINGSTON", "label": "LIVINGSTON", "shape": "dot", "size": 11.021711366538952, "title": "Infections: 16\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "MADISON", "label": "MADISON", "shape": "dot", "size": 17.59897828863346, "title": "Infections: 119\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "MONROE", "label": "MONROE", "shape": "dot", "size": 50.42145593869732, "title": "Infections: 633\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "MONTGOMERY", "label": "MONTGOMERY", "shape": "dot", "size": 10.191570881226054, "title": "Infections: 3\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "NASSAU", "label": "NASSAU", "shape": "dot", "size": 39.885057471264375, "title": "Infections: 468\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "NEW YORK", "label": "NEW YORK", "shape": "dot", "size": 32.28607918263091, "title": "Infections: 349\nRegion: NYC"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "NIAGARA", "label": "NIAGARA", "shape": "dot", "size": 11.915708812260537, "title": "Infections: 30\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ONEIDA", "label": "ONEIDA", "shape": "dot", "size": 16.257982120051086, "title": "Infections: 98\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ONONDAGA", "label": "ONONDAGA", "shape": "dot", "size": 16.76883780332056, "title": "Infections: 106\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ONTARIO", "label": "ONTARIO", "shape": "dot", "size": 21.430395913154534, "title": "Infections: 179\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ORANGE", "label": "ORANGE", "shape": "dot", "size": 15.491698595146872, "title": "Infections: 86\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ORLEANS", "label": "ORLEANS", "shape": "dot", "size": 11.085568326947637, "title": "Infections: 17\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "OSWEGO", "label": "OSWEGO", "shape": "dot", "size": 12.298850574712644, "title": "Infections: 36\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "OTSEGO", "label": "OTSEGO", "shape": "dot", "size": 12.043422733077906, "title": "Infections: 32\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "PUTNAM", "label": "PUTNAM", "shape": "dot", "size": 12.80970625798212, "title": "Infections: 44\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "QUEENS", "label": "QUEENS", "shape": "dot", "size": 18.04597701149425, "title": "Infections: 126\nRegion: NYC"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "RENSSELAER", "label": "RENSSELAER", "shape": "dot", "size": 10.766283524904214, "title": "Infections: 12\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "RICHMOND", "label": "RICHMOND", "shape": "dot", "size": 41.35376756066411, "title": "Infections: 491\nRegion: NYC"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ROCKLAND", "label": "ROCKLAND", "shape": "dot", "size": 21.81353767560664, "title": "Infections: 185\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "SARATOGA", "label": "SARATOGA", "shape": "dot", "size": 13.256704980842912, "title": "Infections: 51\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "SCHENECTADY", "label": "SCHENECTADY", "shape": "dot", "size": 13.256704980842912, "title": "Infections: 51\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "SCHOHARIE", "label": "SCHOHARIE", "shape": "dot", "size": 11.213282247765006, "title": "Infections: 19\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "SCHUYLER", "label": "SCHUYLER", "shape": "dot", "size": 10.255427841634738, "title": "Infections: 4\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "SENECA", "label": "SENECA", "shape": "dot", "size": 11.979565772669222, "title": "Infections: 31\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ST LAWRENCE", "label": "ST LAWRENCE", "shape": "dot", "size": 10.893997445721583, "title": "Infections: 14\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "STEUBEN", "label": "STEUBEN", "shape": "dot", "size": 11.085568326947637, "title": "Infections: 17\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "SUFFOLK", "label": "SUFFOLK", "shape": "dot", "size": 42.12005108556833, "title": "Infections: 503\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "SULLIVAN", "label": "SULLIVAN", "shape": "dot", "size": 13.320561941251597, "title": "Infections: 52\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "TIOGA", "label": "TIOGA", "shape": "dot", "size": 11.915708812260537, "title": "Infections: 30\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "TOMPKINS", "label": "TOMPKINS", "shape": "dot", "size": 12.873563218390805, "title": "Infections: 45\nRegion: CENTRAL"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "ULSTER", "label": "ULSTER", "shape": "dot", "size": 14.725415070242656, "title": "Infections: 74\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "WARREN", "label": "WARREN", "shape": "dot", "size": 11.149425287356323, "title": "Infections: 18\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "WASHINGTON", "label": "WASHINGTON", "shape": "dot", "size": 11.40485312899106, "title": "Infections: 22\nRegion: CAPITAL DISTRICT"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "WAYNE", "label": "WAYNE", "shape": "dot", "size": 11.851851851851851, "title": "Infections: 29\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "WESTCHESTER", "label": "WESTCHESTER", "shape": "dot", "size": 40.842911877394634, "title": "Infections: 483\nRegion: METRO"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "WYOMING", "label": "WYOMING", "shape": "dot", "size": 10.638569604086845, "title": "Infections: 10\nRegion: WESTERN"}, {"color": "#0000FF", "font": {"color": "white"}, "id": "YATES", "label": "YATES", "shape": "dot", "size": 10.127713920817369, "title": "Infections: 2\nRegion: WESTERN"}]);
+                  edges = new vis.DataSet([{"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "CLINTON", "value": 66.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "COLUMBIA", "value": 67.0}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "DELAWARE", "value": 68.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "ESSEX", "value": 65.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "FRANKLIN", "value": 65.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "FULTON", "value": 76.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "GREENE", "value": 62.0}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 56.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 57.0}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 71.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 61.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 81.0}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 81.0}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 65.0}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 64.5}, {"from": "ALBANY", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 66.5}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "COLUMBIA", "value": 22.5}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "DELAWARE", "value": 24.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "ESSEX", "value": 21.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "FRANKLIN", "value": 21.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "FULTON", "value": 32.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "GREENE", "value": 17.5}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 12.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 12.5}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 27.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 17.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 36.5}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 36.5}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 20.5}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 20.0}, {"from": "CLINTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 22.0}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "DELAWARE", "value": 24.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "ESSEX", "value": 21.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "FRANKLIN", "value": 21.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "FULTON", "value": 32.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "GREENE", "value": 18.0}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 12.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 13.0}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 27.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 17.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 37.0}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 37.0}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 21.0}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 20.5}, {"from": "COLUMBIA", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 22.5}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "ESSEX", "value": 23.0}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "FRANKLIN", "value": 23.0}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "FULTON", "value": 34.0}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "GREENE", "value": 19.5}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 14.0}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 14.5}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 29.0}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 19.0}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 38.5}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 38.5}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 22.5}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 22.0}, {"from": "DELAWARE", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 24.0}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "FRANKLIN", "value": 20.0}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "FULTON", "value": 31.0}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "GREENE", "value": 16.5}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 11.0}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 11.5}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 26.0}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 16.0}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 35.5}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 35.5}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 19.5}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 19.0}, {"from": "ESSEX", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 21.0}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "FULTON", "value": 31.0}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "GREENE", "value": 16.5}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 11.0}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 11.5}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 26.0}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 16.0}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 35.5}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 35.5}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 19.5}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 19.0}, {"from": "FRANKLIN", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 21.0}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "GREENE", "value": 27.5}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 22.0}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 22.5}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 37.0}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 27.0}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 46.5}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 46.5}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 30.5}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 30.0}, {"from": "FULTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 32.0}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "HAMILTON", "value": 7.5}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 8.0}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 22.5}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 12.5}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 32.0}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 32.0}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 16.0}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 15.5}, {"from": "GREENE", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 17.5}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "MONTGOMERY", "value": 2.5}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 17.0}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 7.0}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 26.5}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 26.5}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 10.5}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 10.0}, {"from": "HAMILTON", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 12.0}, {"from": "MONTGOMERY", "title": "Regional connection: CAPITAL DISTRICT", "to": "OTSEGO", "value": 17.5}, {"from": "MONTGOMERY", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 7.5}, {"from": "MONTGOMERY", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 27.0}, {"from": "MONTGOMERY", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 27.0}, {"from": "MONTGOMERY", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 11.0}, {"from": "MONTGOMERY", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 10.5}, {"from": "MONTGOMERY", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 12.5}, {"from": "OTSEGO", "title": "Regional connection: CAPITAL DISTRICT", "to": "RENSSELAER", "value": 22.0}, {"from": "OTSEGO", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 41.5}, {"from": "OTSEGO", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 41.5}, {"from": "OTSEGO", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 25.5}, {"from": "OTSEGO", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 25.0}, {"from": "OTSEGO", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 27.0}, {"from": "RENSSELAER", "title": "Regional connection: CAPITAL DISTRICT", "to": "SARATOGA", "value": 31.5}, {"from": "RENSSELAER", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 31.5}, {"from": "RENSSELAER", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 15.5}, {"from": "RENSSELAER", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 15.0}, {"from": "RENSSELAER", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 17.0}, {"from": "SARATOGA", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHENECTADY", "value": 51.0}, {"from": "SARATOGA", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 35.0}, {"from": "SARATOGA", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 34.5}, {"from": "SARATOGA", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 36.5}, {"from": "SCHENECTADY", "title": "Regional connection: CAPITAL DISTRICT", "to": "SCHOHARIE", "value": 35.0}, {"from": "SCHENECTADY", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 34.5}, {"from": "SCHENECTADY", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 36.5}, {"from": "SCHOHARIE", "title": "Regional connection: CAPITAL DISTRICT", "to": "WARREN", "value": 18.5}, {"from": "SCHOHARIE", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 20.5}, {"from": "WARREN", "title": "Regional connection: CAPITAL DISTRICT", "to": "WASHINGTON", "value": 20.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "CAYUGA", "value": 121.5}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "CHENANGO", "value": 48.5}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "CORTLAND", "value": 34.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "HERKIMER", "value": 103.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "JEFFERSON", "value": 37.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "LEWIS", "value": 55.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "MADISON", "value": 92.5}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 82.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 86.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 51.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 40.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 48.0}, {"from": "BROOME", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 55.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "CHENANGO", "value": 104.0}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "CORTLAND", "value": 89.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "HERKIMER", "value": 158.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "JEFFERSON", "value": 92.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "LEWIS", "value": 110.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "MADISON", "value": 148.0}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 137.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 141.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 106.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 95.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 103.5}, {"from": "CAYUGA", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 111.0}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "CORTLAND", "value": 16.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "HERKIMER", "value": 85.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "JEFFERSON", "value": 19.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "LEWIS", "value": 37.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "MADISON", "value": 75.0}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 64.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 68.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 33.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 22.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 30.5}, {"from": "CHENANGO", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 38.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "HERKIMER", "value": 71.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "JEFFERSON", "value": 5.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "LEWIS", "value": 23.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "MADISON", "value": 60.5}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 50.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 54.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 19.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 8.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 16.0}, {"from": "CORTLAND", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 23.5}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "JEFFERSON", "value": 74.0}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "LEWIS", "value": 92.0}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "MADISON", "value": 129.5}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 119.0}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 123.0}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 88.0}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 77.0}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 85.0}, {"from": "HERKIMER", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 92.5}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "LEWIS", "value": 26.0}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "MADISON", "value": 63.5}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 53.0}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 57.0}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 22.0}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 11.0}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 19.0}, {"from": "JEFFERSON", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 26.5}, {"from": "LEWIS", "title": "Regional connection: CENTRAL", "to": "MADISON", "value": 81.5}, {"from": "LEWIS", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 71.0}, {"from": "LEWIS", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 75.0}, {"from": "LEWIS", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 40.0}, {"from": "LEWIS", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 29.0}, {"from": "LEWIS", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 37.0}, {"from": "LEWIS", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 44.5}, {"from": "MADISON", "title": "Regional connection: CENTRAL", "to": "ONEIDA", "value": 108.5}, {"from": "MADISON", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 112.5}, {"from": "MADISON", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 77.5}, {"from": "MADISON", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 66.5}, {"from": "MADISON", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 74.5}, {"from": "MADISON", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 82.0}, {"from": "ONEIDA", "title": "Regional connection: CENTRAL", "to": "ONONDAGA", "value": 102.0}, {"from": "ONEIDA", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 67.0}, {"from": "ONEIDA", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 56.0}, {"from": "ONEIDA", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 64.0}, {"from": "ONEIDA", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 71.5}, {"from": "ONONDAGA", "title": "Regional connection: CENTRAL", "to": "OSWEGO", "value": 71.0}, {"from": "ONONDAGA", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 60.0}, {"from": "ONONDAGA", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 68.0}, {"from": "ONONDAGA", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 75.5}, {"from": "OSWEGO", "title": "Regional connection: CENTRAL", "to": "ST LAWRENCE", "value": 25.0}, {"from": "OSWEGO", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 33.0}, {"from": "OSWEGO", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 40.5}, {"from": "ST LAWRENCE", "title": "Regional connection: CENTRAL", "to": "TIOGA", "value": 22.0}, {"from": "ST LAWRENCE", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 29.5}, {"from": "TIOGA", "title": "Regional connection: CENTRAL", "to": "TOMPKINS", "value": 37.5}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "NASSAU", "value": 243.0}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "ORANGE", "value": 52.0}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "PUTNAM", "value": 31.0}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "ROCKLAND", "value": 101.5}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "SUFFOLK", "value": 260.5}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "SULLIVAN", "value": 35.0}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "ULSTER", "value": 46.0}, {"from": "DUTCHESS", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 250.5}, {"from": "NASSAU", "title": "Regional connection: METRO", "to": "ORANGE", "value": 277.0}, {"from": "NASSAU", "title": "Regional connection: METRO", "to": "PUTNAM", "value": 256.0}, {"from": "NASSAU", "title": "Regional connection: METRO", "to": "ROCKLAND", "value": 326.5}, {"from": "NASSAU", "title": "Regional connection: METRO", "to": "SUFFOLK", "value": 485.5}, {"from": "NASSAU", "title": "Regional connection: METRO", "to": "SULLIVAN", "value": 260.0}, {"from": "NASSAU", "title": "Regional connection: METRO", "to": "ULSTER", "value": 271.0}, {"from": "NASSAU", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 475.5}, {"from": "ORANGE", "title": "Regional connection: METRO", "to": "PUTNAM", "value": 65.0}, {"from": "ORANGE", "title": "Regional connection: METRO", "to": "ROCKLAND", "value": 135.5}, {"from": "ORANGE", "title": "Regional connection: METRO", "to": "SUFFOLK", "value": 294.5}, {"from": "ORANGE", "title": "Regional connection: METRO", "to": "SULLIVAN", "value": 69.0}, {"from": "ORANGE", "title": "Regional connection: METRO", "to": "ULSTER", "value": 80.0}, {"from": "ORANGE", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 284.5}, {"from": "PUTNAM", "title": "Regional connection: METRO", "to": "ROCKLAND", "value": 114.5}, {"from": "PUTNAM", "title": "Regional connection: METRO", "to": "SUFFOLK", "value": 273.5}, {"from": "PUTNAM", "title": "Regional connection: METRO", "to": "SULLIVAN", "value": 48.0}, {"from": "PUTNAM", "title": "Regional connection: METRO", "to": "ULSTER", "value": 59.0}, {"from": "PUTNAM", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 263.5}, {"from": "ROCKLAND", "title": "Regional connection: METRO", "to": "SUFFOLK", "value": 344.0}, {"from": "ROCKLAND", "title": "Regional connection: METRO", "to": "SULLIVAN", "value": 118.5}, {"from": "ROCKLAND", "title": "Regional connection: METRO", "to": "ULSTER", "value": 129.5}, {"from": "ROCKLAND", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 334.0}, {"from": "SUFFOLK", "title": "Regional connection: METRO", "to": "SULLIVAN", "value": 277.5}, {"from": "SUFFOLK", "title": "Regional connection: METRO", "to": "ULSTER", "value": 288.5}, {"from": "SUFFOLK", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 493.0}, {"from": "SULLIVAN", "title": "Regional connection: METRO", "to": "ULSTER", "value": 63.0}, {"from": "SULLIVAN", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 267.5}, {"from": "ULSTER", "title": "Regional connection: METRO", "to": "WESTCHESTER", "value": 278.5}, {"from": "BRONX", "title": "Regional connection: NYC", "to": "KINGS", "value": 777.5}, {"from": "BRONX", "title": "Regional connection: NYC", "to": "NEW YORK", "value": 560.5}, {"from": "BRONX", "title": "Regional connection: NYC", "to": "QUEENS", "value": 449.0}, {"from": "BRONX", "title": "Regional connection: NYC", "to": "RICHMOND", "value": 631.5}, {"from": "KINGS", "title": "Regional connection: NYC", "to": "NEW YORK", "value": 566.0}, {"from": "KINGS", "title": "Regional connection: NYC", "to": "QUEENS", "value": 454.5}, {"from": "KINGS", "title": "Regional connection: NYC", "to": "RICHMOND", "value": 637.0}, {"from": "NEW YORK", "title": "Regional connection: NYC", "to": "QUEENS", "value": 237.5}, {"from": "NEW YORK", "title": "Regional connection: NYC", "to": "RICHMOND", "value": 420.0}, {"from": "QUEENS", "title": "Regional connection: NYC", "to": "RICHMOND", "value": 308.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "CATTARAUGUS", "value": 25.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "CHAUTAUQUA", "value": 26.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "CHEMUNG", "value": 49.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "ERIE", "value": 282.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "GENESEE", "value": 53.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "LIVINGSTON", "value": 25.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "MONROE", "value": 334.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 32.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 107.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 26.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 19.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 33.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 26.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 32.0}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 22.5}, {"from": "ALLEGANY", "title": "Regional connection: WESTERN", "to": "YATES", "value": 18.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "CHAUTAUQUA", "value": 16.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "CHEMUNG", "value": 39.0}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "ERIE", "value": 272.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "GENESEE", "value": 43.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "LIVINGSTON", "value": 15.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "MONROE", "value": 324.0}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 22.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 97.0}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 16.0}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 9.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 23.0}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 16.0}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 22.0}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 12.5}, {"from": "CATTARAUGUS", "title": "Regional connection: WESTERN", "to": "YATES", "value": 8.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "CHEMUNG", "value": 40.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "ERIE", "value": 274.0}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "GENESEE", "value": 45.0}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "LIVINGSTON", "value": 17.0}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "MONROE", "value": 325.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 24.0}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 98.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 17.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 11.0}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 24.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 17.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 23.5}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 14.0}, {"from": "CHAUTAUQUA", "title": "Regional connection: WESTERN", "to": "YATES", "value": 10.0}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "ERIE", "value": 296.5}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "GENESEE", "value": 67.5}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "LIVINGSTON", "value": 39.5}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "MONROE", "value": 348.0}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 46.5}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 121.0}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 40.0}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 33.5}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 47.0}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 40.0}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 46.0}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 36.5}, {"from": "CHEMUNG", "title": "Regional connection: WESTERN", "to": "YATES", "value": 32.5}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "GENESEE", "value": 301.0}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "LIVINGSTON", "value": 273.0}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "MONROE", "value": 581.5}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 280.0}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 354.5}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 273.5}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 267.0}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 280.5}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 273.5}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 279.5}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 270.0}, {"from": "ERIE", "title": "Regional connection: WESTERN", "to": "YATES", "value": 266.0}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "LIVINGSTON", "value": 44.0}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "MONROE", "value": 352.5}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 51.0}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 125.5}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 44.5}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 38.0}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 51.5}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 44.5}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 50.5}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 41.0}, {"from": "GENESEE", "title": "Regional connection: WESTERN", "to": "YATES", "value": 37.0}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "MONROE", "value": 324.5}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 23.0}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 97.5}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 16.5}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 10.0}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 23.5}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 16.5}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 22.5}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 13.0}, {"from": "LIVINGSTON", "title": "Regional connection: WESTERN", "to": "YATES", "value": 9.0}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "NIAGARA", "value": 331.5}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 406.0}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 325.0}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 318.5}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 332.0}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 325.0}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 331.0}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 321.5}, {"from": "MONROE", "title": "Regional connection: WESTERN", "to": "YATES", "value": 317.5}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "ONTARIO", "value": 104.5}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 23.5}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 17.0}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 30.5}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 23.5}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 29.5}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 20.0}, {"from": "NIAGARA", "title": "Regional connection: WESTERN", "to": "YATES", "value": 16.0}, {"from": "ONTARIO", "title": "Regional connection: WESTERN", "to": "ORLEANS", "value": 98.0}, {"from": "ONTARIO", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 91.5}, {"from": "ONTARIO", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 105.0}, {"from": "ONTARIO", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 98.0}, {"from": "ONTARIO", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 104.0}, {"from": "ONTARIO", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 94.5}, {"from": "ONTARIO", "title": "Regional connection: WESTERN", "to": "YATES", "value": 90.5}, {"from": "ORLEANS", "title": "Regional connection: WESTERN", "to": "SCHUYLER", "value": 10.5}, {"from": "ORLEANS", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 24.0}, {"from": "ORLEANS", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 17.0}, {"from": "ORLEANS", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 23.0}, {"from": "ORLEANS", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 13.5}, {"from": "ORLEANS", "title": "Regional connection: WESTERN", "to": "YATES", "value": 9.5}, {"from": "SCHUYLER", "title": "Regional connection: WESTERN", "to": "SENECA", "value": 17.5}, {"from": "SCHUYLER", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 10.5}, {"from": "SCHUYLER", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 16.5}, {"from": "SCHUYLER", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 7.0}, {"from": "SCHUYLER", "title": "Regional connection: WESTERN", "to": "YATES", "value": 3.0}, {"from": "SENECA", "title": "Regional connection: WESTERN", "to": "STEUBEN", "value": 24.0}, {"from": "SENECA", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 30.0}, {"from": "SENECA", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 20.5}, {"from": "SENECA", "title": "Regional connection: WESTERN", "to": "YATES", "value": 16.5}, {"from": "STEUBEN", "title": "Regional connection: WESTERN", "to": "WAYNE", "value": 23.0}, {"from": "STEUBEN", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 13.5}, {"from": "STEUBEN", "title": "Regional connection: WESTERN", "to": "YATES", "value": 9.5}, {"from": "WAYNE", "title": "Regional connection: WESTERN", "to": "WYOMING", "value": 19.5}, {"from": "WAYNE", "title": "Regional connection: WESTERN", "to": "YATES", "value": 15.5}, {"from": "WYOMING", "title": "Regional connection: WESTERN", "to": "YATES", "value": 6.0}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -200, "centralGravity": 0.01, "springLength": 100, "springConstant": 0.01, "damping": 0.09}, "maxVelocity": 50, "solver": "forceAtlas2Based", "timestep": 0.35, "stabilization": {"iterations": 150}}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
