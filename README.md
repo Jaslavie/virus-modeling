@@ -17,3 +17,4 @@ We are interested in the following population groups:
 - modeling the spread of [seasonal flu](https://arxiv.org/pdf/2101.07926) based on human behavior and vaccination dynamics
 - simulating the spread of viruses, by [3Blue1Brown](https://www.youtube.com/watch?v=gxAaO2rsdIs)
 - [mathematical equations](https://jxshix.people.wm.edu/2009-harbin-course/classic/Kermack-McKendrick-1927-I.pdf) used for SIR model, studied by Kermack and McKendrick 
+- new york influenza [dataset](https://www.kaggle.com/datasets/titustitus/h1n1-new-york-2009?resource=download) (2009 - 2018)
