@@ -12,6 +12,8 @@ export interface SimulationState {
     susceptible: number[];
     infected: number[];
     recovered: number[];
+    nodes: NetworkNode[];
+    edges: NetworkEdge[];
 }
 export interface NetworkNode {
     id: number;

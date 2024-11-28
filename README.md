@@ -1,4 +1,4 @@
-Getting meta with my sickness, and potentially forecast its duration.
+Getting meta with my illness -- modeling the spread of viral diseases based on human behavior (decision to vaccinate, social distancing, hygiene, etc.)
 
 ### Experiment Design
 We will model the spread of influenza B in NYC from 2009 to 2018. The Reproduction rate is 1.4, indicating that 1.4 people will be infected by each infected person. Reference `Recommneded Readings` section for all cited research.

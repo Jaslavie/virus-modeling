@@ -1,6 +1,6 @@
 // define the API service for the frontend
 // import the types for the simulation data that the frontend will use
-import { SimulationPrams, SimulationState } from "../types/simulation";
+import { SimulationState } from "../types/simulation";
 
 export const connectWebSocket = (
     onMessage: (data: SimulationState) => void,
