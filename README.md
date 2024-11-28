@@ -1,5 +1,8 @@
 Getting meta with my sickness, and potentially forecast its duration.
 
+### Experiment Design
+We will model the spread of influenza B in NYC from 2009 to 2018. The Reproduction rate is 1.4, indicating that 1.4 people will be infected by each infected person. Reference `Recommneded Readings` section for all cited research.
+
 ### Relevant Parameters
 R0, the reproduction number, is the average number of people an infected person will infect (if R0 < 1, the epidemic will die out. if R0 > 1, the epidemic will grow). The following list of elements will be considered to calculate R0:
 - Population density (we'll do NYC for something interesting)
