@@ -1,7 +1,7 @@
 // translate the simulation data from the backend to the frontend by turning them into modules
 
 // export as an interface to define the shape of the simulation parameters
-export interface SimulationPrams {
+export interface SimulationParams {
     population: number;
     initial_infected: number;
     infection_rate: number;
