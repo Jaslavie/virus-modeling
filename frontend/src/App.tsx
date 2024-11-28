@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { NetworkGraph } from "./components/NetworkGraph";
 import { SimulationControls } from "./components/SimulationControls";
 import { SimulationParams, SimulationState } from "./types/simulation";
@@ -15,25 +15,42 @@ function App() {
 
   // initialize the simulation state
   const [state, setState] = useState<SimulationState | null>(null);
+  // initialize the websocket reference
+  const wsRef = useRef<WebSocket | null>(null); 
 
   // connect to the websocket server
   useEffect(() => {
-    const ws = connectWebSocket(
+    wsRef.current = connectWebSocket(
       (data) => setState(data),
       (error) => console.error('WebSocket error:', error)
     );
 
-    // close the websocket connection when the component unmounts
-    return () => ws.close();
+    return () => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.close();
+      }
+    }
   }, []);
+
+  // handle parameter changes
+  const handleParamChange = (param: keyof SimulationParams, value: number) => {
+    setParams(prev => {
+      const newParams = {...prev, [param]: value};
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: 'UPDATE_PARAMS',
+          ...newParams,
+        }));
+      }
+      return newParams;
+    })
+  };
 
   return (
     <div className="App">
       <SimulationControls
         params = {params}
-        onParamChange={(param, value) =>
-          setParams((prev) => ({...prev, [param]: value }))
-        }
+        onParamChange = {handleParamChange}
       />
       {/* render the network graph only if the state is available */}
       {state && <NetworkGraph nodes = {state.nodes} edges = {state.edges} />}

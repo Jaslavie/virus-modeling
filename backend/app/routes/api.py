@@ -1,15 +1,29 @@
 from fastapi import APIRouter, WebSocket
+from fastapi.exceptions import WebSocketDisconnect
 from ..models.simulation import VirusSimulation
 from ..services.sir_service import run_SIR_with_behavior
 
 router = APIRouter()
+
+# keep track of connections
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections list[WebSocket] = []
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+    async def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+manager = ConnectionManager()
 
 @router.websocket("/ws/simulation") # websocket endpoint to handle simulation updates
 async def simulation_websocket(websocket: WebSocket):
     """ 
     websocket endpoint to handle simulation updates in real-time
     """
-    await websocket.accept()
+    await manager.connect(websocket)
     sim = VirusSimulation()
 
     try:
@@ -28,10 +42,11 @@ async def simulation_websocket(websocket: WebSocket):
             # perform one step of the simulation
             state_data = sim.step()
             await websocket.send_json(state_data)
+    except WebSocketDisconnect:
+        await manager.disconnect(websocket) 
     except Exception as e:
         print(f"Error in simulation: {e}")
-    finally:
-        await websocket.close()
+        await manager.disconnect(websocket)
 
 @router.get("/sir")
 async def get_sir_data(
