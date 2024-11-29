@@ -8,6 +8,9 @@ export const connectWebSocket = (
 ) => {
     const ws = new WebSocket("ws://localhost:8000/api/ws/simulation");
     
+    let lastUpdate = 0;
+    const UPDATE_INTERVAL = 100; // Minimum ms between updates
+
     ws.onopen = () => {
         console.log("WebSocket connected");
         // Send initial parameters when connection is established
@@ -22,16 +25,19 @@ export const connectWebSocket = (
 
     ws.onmessage = (event) => {
         try {
-            const data = JSON.parse(event.data);
-            console.log("Received data:", data);
-            
-            // Check if data has the network structure
-            // extracts nodes and edges from the data nested in the network key
-            if (data.network && Array.isArray(data.network.nodes) && Array.isArray(data.network.edges)) {
-                onMessage(data.network);  // Pass only the network part
-            } else {
-                console.error("Invalid data structure received:", data);
+            const now = Date.now();
+            if (now - lastUpdate < UPDATE_INTERVAL) {
+                return; // Skip this update
             }
+            lastUpdate = now;
+
+            const data = JSON.parse(event.data);
+            const simulationState: SimulationState = {
+                nodes: data.network.nodes,
+                edges: data.network.edges,
+                counts: data.counts
+            };
+            onMessage(simulationState);
         } catch (error) {
             console.error("Error parsing message:", error);
         }

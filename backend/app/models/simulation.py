@@ -6,7 +6,7 @@ import random
 from tqdm import tqdm
 
 class VirusSimulation:
-    def __init__(self, population=1000, initial_infected=5, infection_rate=0.3, recovery_rate=0.1):
+    def __init__(self, population=100, initial_infected=5, infection_rate=0.3, recovery_rate=0.1):
         """ 
         Initialize a network simulation 
         """
@@ -19,6 +19,7 @@ class VirusSimulation:
 
         # initialize node states (0: susceptible, 1: infected, 2: recovered)
         self.states = np.zeros(population)
+        self.initial_infected = initial_infected
 
         # randomly infect some nodes
         initial_infected_nodes = random.sample(range(population), initial_infected)
@@ -26,6 +27,7 @@ class VirusSimulation:
 
         # store positions for consistent visualization
         self.pos = nx.spring_layout(self.G)
+        self.time_step = 0
 
     def step(self):
         """ 
@@ -34,32 +36,31 @@ class VirusSimulation:
         new_states = self.states.copy() # copy current state of nodes
 
         for node in range(self.population):
-            if self.states[node] == 1: # infected
-                # create a probability check to see if the node recovers
-                if random.random() < self.recovery_rate: 
-                    new_states[node] = 2 # recovered
-                    continue
-                
-                # try to infect neighbors if susceptible
-                for neighbor in self.G.neighbors(node):
-                    # check if neighbor is susceptible and infect with a probability
-                    if self.states[neighbor] == 0 and random.random() < self.infection_rate:
-                        new_states[neighbor] = 1 # infected
+            if self.states[node] == 1:  # infected
+                if random.random() < self.recovery_rate:
+                    new_states[node] = 2  # recovered
+                else:
+                    # try to infect neighbors
+                    for neighbor in self.G.neighbors(node):
+                        if self.states[neighbor] == 0 and random.random() < self.infection_rate:
+                            new_states[neighbor] = 1  # infected
 
-        self.states = new_states # update state
-        return self.get_state_data() # return state data
-    
-    def get_state_data(self):
-        """ 
-        get the current simulation state represented by the counts of susceptible, infected, and recovered nodes
-        """
-        return{
-            'counts': {
-                'susceptible': int(np.sum(self.states == 0)),
-                'infected': int(np.sum(self.states == 1)),
-                'recovered': int(np.sum(self.states == 2))
-            },
-            'network': self.get_network_data()
+        self.states = new_states
+        self.time_step += 1
+        
+        # Calculate current counts
+        counts = {
+            'susceptible': int(np.sum(self.states == 0)),
+            'infected': int(np.sum(self.states == 1)),
+            'recovered': int(np.sum(self.states == 2))
+        }
+        
+        return {
+            'counts': counts,
+            'network': {
+                'nodes': self.get_network_data()['nodes'],
+                'edges': self.get_network_data()['edges']
+            }
         }
 
     def get_network_data(self):

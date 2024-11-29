@@ -11,6 +11,11 @@ export interface SimulationParams {
 export interface SimulationState {
     nodes: NetworkNode[];
     edges: NetworkEdge[];
+    counts?: {
+        susceptible: number;
+        infected: number;
+        recovered: number;
+    };
 }
 export interface NetworkNode {
     id: number;

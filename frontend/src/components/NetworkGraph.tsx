@@ -1,5 +1,5 @@
 // store the network graph component
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, memo } from "react";
 import { Network, DataSet } from "vis-network/standalone/esm/vis-network";
 import { NetworkNode, NetworkEdge } from "../types/simulation";
 
@@ -8,69 +8,48 @@ interface NetworkGraphProps {
     edges: NetworkEdge[];
 }
 
-export const NetworkGraph: React.FC<NetworkGraphProps> = ({nodes, edges}) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const networkRef = useRef<Network | null>(null);
+export const NetworkGraph = memo(({ nodes, edges }: NetworkGraphProps) => {
+    const networkRef = useRef<HTMLDivElement>(null);
+    const networkInstanceRef = useRef<Network | null>(null);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!networkRef.current) return;
 
-        // Convert to vis-network format
-        const visNodes = new DataSet(nodes.map(node => ({
-            id: node.id,
-            color: node.state === 1 ? 'red' : 
-                node.state === 2 ? 'green' : 'blue',
-            x: node.x * 1000,
-            y: node.y * 1000
-        })));
+        // Create the network only once
+        if (!networkInstanceRef.current) {
+            const options = {
+                physics: {
+                    enabled: true,
+                    stabilization: {
+                        iterations: 50  // Reduce iterations
+                    },
+                    barnesHut: {
+                        gravitationalConstant: -2000,
+                        centralGravity: 0.3,
+                        springLength: 95,
+                        springConstant: 0.04,
+                        damping: 0.09
+                    }
+                },
+                edges: {
+                    smooth: false  // Disable edge smoothing for better performance
+                }
+            };
 
-        const visEdges = new DataSet(edges.map(edge => ({
-            from: edge.source,
-            to: edge.target
-        })));
+            const data = {
+                nodes: new DataSet(nodes),
+                edges: new DataSet(edges)
+            };
 
-        const options = {
-            physics: {
-                enabled: true,
-                stabilization: false
-            },
-            nodes: {
-                size: 10,
-                borderWidth: 2
-            },
-            edges: {
-                width: 1,
-                color: { opacity: 0.2 }
-            }
-        };
-
-        // Create network
-        networkRef.current = new Network(
-            containerRef.current,
-            { 
-                nodes: visNodes, 
-                edges: visEdges 
-            },
-            options
-        );
-
-        return () => {
-            if (networkRef.current) {
-                networkRef.current.destroy();
-                networkRef.current = null;
-            }
-        };
+            networkInstanceRef.current = new Network(networkRef.current, data, options);
+        } else {
+            // Just update the data
+            networkInstanceRef.current.setData({
+                nodes: new DataSet(nodes),
+                edges: new DataSet(edges)
+            });
+        }
     }, [nodes, edges]);
 
-    return (
-        <div 
-            ref={containerRef} 
-            style={{ 
-                height: '600px', 
-                width: '100%',
-                background: 'black',
-                border: '1px solid #333'
-            }} 
-        />
-    );
-};
+    return <div ref={networkRef} style={{ height: "500px" }} />;
+});

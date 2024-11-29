@@ -3,6 +3,7 @@ import { NetworkGraph } from "./components/NetworkGraph";
 import { SimulationControls } from "./components/SimulationControls";
 import { SimulationParams, SimulationState } from "./types/simulation";
 import { connectWebSocket } from "./services/api";
+import { Counter } from "./components/Counter";
 
 function App() {
   // initialize the simulation parameters
@@ -18,22 +19,40 @@ function App() {
     nodes: [],
     edges: []
   });
-  // initialize the websocket reference
+
+  // Add loading state
+  const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null); 
+
+  // initialize the counts
+  const [counts, setCounts] = useState({
+    susceptible: params.population - params.initial_infected,
+    infected: params.initial_infected,
+    recovered: 0
+  });
 
   // connect to the websocket server
   useEffect(() => {
     wsRef.current = connectWebSocket(
-      (data) => {
-        console.log("the data is", data);
+      (data: SimulationState) => {
+        console.log("Received simulation data:", data);
         setState(data);
+        // update the counts
+        if (data.counts) {
+          setCounts({
+            susceptible: data.counts.susceptible,
+            infected: data.counts.infected,
+            recovered: data.counts.recovered
+          });
+        }
       },
-      (error) => console.error('WebSocket error:', error)
+      (error: Event) => console.error('WebSocket error:', error)
     );
 
     return () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.close();
+        setIsConnected(false);
       }
     }
   }, []);
@@ -57,6 +76,11 @@ function App() {
       <SimulationControls
         params = {params}
         onParamChange = {handleParamChange}
+      />
+      <Counter
+        susceptible={counts.susceptible}
+        infected={counts.infected}
+        recovered={counts.recovered}
       />
       {state && state.nodes && state.nodes.length > 0 && state.edges && state.edges.length > 0 && (
         <NetworkGraph 

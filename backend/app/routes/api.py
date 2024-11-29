@@ -1,6 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from ..models.simulation import VirusSimulation
 from ..services.sir_service import run_SIR_with_behavior
+import asyncio
 
 router = APIRouter()
 
@@ -41,6 +42,9 @@ async def simulation_websocket(websocket: WebSocket):
             # perform one step of the simulation
             state_data = sim.step()
             await websocket.send_json(state_data)
+            
+            # Increase delay to reduce update frequency
+            await asyncio.sleep(0.2)
     except WebSocketDisconnect:
         await manager.disconnect(websocket) 
     except Exception as e:
