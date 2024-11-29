@@ -8,7 +8,7 @@ import { Counter } from "./components/Counter";
 function App() {
   // initialize the simulation parameters
   const [params, setParams] = useState<SimulationParams>({
-    population: 1000,
+    population: 100,
     initial_infected: 5,
     infection_rate: 0.3,
     recovery_rate: 0.1,
@@ -39,11 +39,12 @@ function App() {
         setState(data);
         // update the counts
         if (data.counts) {
-          setCounts({
-            susceptible: data.counts.susceptible,
-            infected: data.counts.infected,
-            recovered: data.counts.recovered
-          });
+          setCounts(prevCounts => ({
+            ...prevCounts,
+            susceptible: data.counts!.susceptible,
+            infected: data.counts!.infected,
+            recovered: data.counts!.recovered
+          }));
         }
       },
       (error: Event) => console.error('WebSocket error:', error)

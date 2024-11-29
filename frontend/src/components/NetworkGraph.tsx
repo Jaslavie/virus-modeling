@@ -32,20 +32,49 @@ export const NetworkGraph = memo(({ nodes, edges }: NetworkGraphProps) => {
                     }
                 },
                 edges: {
-                    smooth: false  // Disable edge smoothing for better performance
+                    smooth: false
+                },
+                nodes: {
+                    shape: 'dot',
+                    size: 10,
                 }
             };
 
+            // Transform nodes to include color based on state
+            const coloredNodes = nodes.map(node => ({
+                ...node,
+                color: {
+                    background: node.state === 0 ? '#2B7CE9' : // blue for susceptible
+                                node.state === 1 ? '#FF0000' : // red for infected
+                                '#808080',                     // gray for recovered
+                    border: node.state === 0 ? '#2B7CE9' :    // matching border colors
+                           node.state === 1 ? '#FF0000' : 
+                           '#808080',
+                }
+            }));
+
             const data = {
-                nodes: new DataSet(nodes),
+                nodes: new DataSet(coloredNodes),
                 edges: new DataSet(edges)
             };
 
             networkInstanceRef.current = new Network(networkRef.current, data, options);
         } else {
-            // Just update the data
+            // Update existing network with new colored nodes
+            const coloredNodes = nodes.map(node => ({
+                ...node,
+                color: {
+                    background: node.state === 0 ? '#2B7CE9' : // blue for susceptible
+                                node.state === 1 ? '#FF0000' : // red for infected
+                                '#808080',                     // gray for recovered
+                    border: node.state === 0 ? '#2B7CE9' :    // matching border colors
+                        node.state === 1 ? '#FF0000' : 
+                        '#808080',
+                }
+            }));
+
             networkInstanceRef.current.setData({
-                nodes: new DataSet(nodes),
+                nodes: new DataSet(coloredNodes),
                 edges: new DataSet(edges)
             });
         }

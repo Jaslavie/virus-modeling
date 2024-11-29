@@ -1,5 +1,5 @@
 // count the number of infected and recovered nodes
-import React from "react";
+import React, { memo } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 
 interface SimulationCounterProps {
@@ -7,9 +7,16 @@ interface SimulationCounterProps {
     infected: number;
     recovered: number;
 }
-export const Counter: React.FC<SimulationCounterProps> = ({susceptible, infected, recovered}) => {
+
+export const Counter: React.FC<SimulationCounterProps> = memo(({
+    susceptible,
+    infected,
+    recovered
+}) => {
+    console.log("Counter rendering with:", { susceptible, infected, recovered });
+    
     return(
-        <Paper sx = {{padding: 2, margin: 2}}>
+        <Paper sx={{ padding: 2, margin: 2 }}>
             <Typography variant="h6" gutterBottom>
                 Population Status
             </Typography>
@@ -31,5 +38,5 @@ export const Counter: React.FC<SimulationCounterProps> = ({susceptible, infected
                 </Box>
             </Box>
         </Paper>
-    )
-}
+    );
+});

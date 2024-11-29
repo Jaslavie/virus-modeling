@@ -25,30 +25,33 @@ async def simulation_websocket(websocket: WebSocket):
     """
     await manager.connect(websocket)
     sim = VirusSimulation()
-
+    running = True
+    
     try:
-        while True:
-            # receive message from the client to update simulation parameters (based on user input)
-            data = await websocket.receive_json()
+        while running:
+            try:
+                # Check for any pending messages without blocking
+                data = await websocket.receive_json()
+                
+                if data["type"] == "UPDATE_PARAMS":
+                    sim = VirusSimulation(
+                        population=data["population"],
+                        initial_infected=data["initial_infected"],
+                        infection_rate=data["infection_rate"],
+                        recovery_rate=data["recovery_rate"]
+                    )
+            except:
+                ## handle empty messages
+                pass
             
-            # update simulation parameters if the client send a request to update parameters
-            if data["type"] == "UPDATE_PARAMS":
-                sim = VirusSimulation(
-                    population = data["population"],
-                    initial_infected = data["initial_infected"],
-                    infection_rate = data["infection_rate"],
-                    recovery_rate = data["recovery_rate"]
-                )
-            # perform one step of the simulation
+            # Always step the simulation and send updates
             state_data = sim.step()
             await websocket.send_json(state_data)
-            
-            # Increase delay to reduce update frequency
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)  # Small delay between updates
+                
     except WebSocketDisconnect:
-        await manager.disconnect(websocket) 
-    except Exception as e:
-        print(f"Error in simulation: {e}")
+        running = False
+    finally:
         await manager.disconnect(websocket)
 
 @router.get("/sir")
