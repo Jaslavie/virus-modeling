@@ -1,5 +1,4 @@
-from fastapi import APIRouter, WebSocket
-from fastapi.exceptions import WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from ..models.simulation import VirusSimulation
 from ..services.sir_service import run_SIR_with_behavior
 
@@ -8,7 +7,7 @@ router = APIRouter()
 # keep track of connections
 class ConnectionManager:
     def __init__(self):
-        self.active_connections list[WebSocket] = []
+        self.active_connections = []
     
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
