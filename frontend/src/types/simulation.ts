@@ -9,15 +9,12 @@ export interface SimulationParams {
 }
 
 export interface SimulationState {
-    susceptible: number[];
-    infected: number[];
-    recovered: number[];
     nodes: NetworkNode[];
     edges: NetworkEdge[];
 }
 export interface NetworkNode {
     id: number;
-    state: number;
+    state: number; // 0 for susceptible, 1 for infected, 2 for recovered
     x: number;
     y: number;
 }

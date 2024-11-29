@@ -14,19 +14,25 @@ function App() {
   });
 
   // initialize the simulation state
-  const [state, setState] = useState<SimulationState | null>(null);
+  const [state, setState] = useState<SimulationState >({
+    nodes: [],
+    edges: [],
+  });
   // initialize the websocket reference
   const wsRef = useRef<WebSocket | null>(null); 
 
   // connect to the websocket server
   useEffect(() => {
     wsRef.current = connectWebSocket(
-      (data) => setState(data),
+      (data) => {
+        console.log("the data is", data);
+        setState(data);
+      },
       (error) => console.error('WebSocket error:', error)
     );
 
     return () => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.close();
       }
     }
@@ -52,7 +58,7 @@ function App() {
         params = {params}
         onParamChange = {handleParamChange}
       />
-      {/* render the network graph only if the state is available */}
+      {/* render the network graph based on the state*/}
       {state && <NetworkGraph nodes = {state.nodes} edges = {state.edges} />}
     </div>
   );

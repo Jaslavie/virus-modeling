@@ -7,13 +7,29 @@ export const connectWebSocket = (
     onError: (error: Event) => void
 ) => {
     const ws = new WebSocket("ws://localhost:8000/api/ws/simulation");
+    
+    ws.onopen = () => {
+        console.log("WebSocket connected");
+        // Send initial parameters when connection is established
+        ws.send(JSON.stringify({
+            type: 'UPDATE_PARAMS',
+            population: 1000,
+            initial_infected: 5,
+            infection_rate: 0.3,
+            recovery_rate: 0.1
+        }));
+    };
 
-    // handle message event by parsing the data as JSON and passing it to the onMessage callback
     ws.onmessage = (event) => {
-        onMessage(JSON.parse(event.data));
+        try {
+            const data = JSON.parse(event.data);
+            console.log("Received data:", data);
+            onMessage(data);
+        } catch (error) {
+            console.error("Error parsing message:", error);
+        }
     };
 
     ws.onerror = onError;
-
     return ws;
 }
