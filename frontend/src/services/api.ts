@@ -24,7 +24,14 @@ export const connectWebSocket = (
         try {
             const data = JSON.parse(event.data);
             console.log("Received data:", data);
-            onMessage(data);
+            
+            // Check if data has the network structure
+            // extracts nodes and edges from the data nested in the network key
+            if (data.network && Array.isArray(data.network.nodes) && Array.isArray(data.network.edges)) {
+                onMessage(data.network);  // Pass only the network part
+            } else {
+                console.error("Invalid data structure received:", data);
+            }
         } catch (error) {
             console.error("Error parsing message:", error);
         }

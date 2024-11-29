@@ -14,9 +14,9 @@ function App() {
   });
 
   // initialize the simulation state
-  const [state, setState] = useState<SimulationState >({
+  const [state, setState] = useState<SimulationState>({
     nodes: [],
-    edges: [],
+    edges: []
   });
   // initialize the websocket reference
   const wsRef = useRef<WebSocket | null>(null); 
@@ -58,8 +58,12 @@ function App() {
         params = {params}
         onParamChange = {handleParamChange}
       />
-      {/* render the network graph based on the state*/}
-      {state && <NetworkGraph nodes = {state.nodes} edges = {state.edges} />}
+      {state && state.nodes && state.nodes.length > 0 && state.edges && state.edges.length > 0 && (
+        <NetworkGraph 
+          nodes={state.nodes} 
+          edges={state.edges} 
+        />
+      )}
     </div>
   );
 }

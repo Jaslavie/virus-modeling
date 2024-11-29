@@ -14,6 +14,13 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({nodes, edges}) => {
     useEffect(() => {
         // create a canvas element
         console.log("NetworkGraph received:", { nodes, edges });
+        
+        // Guard against undefined/null/empty arrays
+        if (!nodes?.length || !edges?.length) {
+            console.log("No data to render yet");
+            return;
+        }
+
         const canvas = canvasRef.current;
         if (!canvas) {
             console.error("Canvas element not found");
@@ -64,6 +71,10 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({nodes, edges}) => {
         ref={canvasRef} 
         width={800} 
         height={600} 
-        style={{ background: 'black', border: '1px solid #333' }} 
+        style={{ 
+            background: 'black', 
+            border: '1px solid #333',
+            maxWidth: '100%'
+        }} 
     />;
 };
