@@ -1,5 +1,6 @@
 // store the network graph component
-import React, { useEffect, useRef, } from "react";
+import React, { useEffect, useRef } from "react";
+import { Network, DataSet } from "vis-network/standalone/esm/vis-network";
 import { NetworkNode, NetworkEdge } from "../types/simulation";
 
 interface NetworkGraphProps {
@@ -8,73 +9,68 @@ interface NetworkGraphProps {
 }
 
 export const NetworkGraph: React.FC<NetworkGraphProps> = ({nodes, edges}) => {
-    // create a reference to the canvas element 
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const networkRef = useRef<Network | null>(null);
 
     useEffect(() => {
-        // create a canvas element
-        console.log("NetworkGraph received:", { nodes, edges });
-        
-        // Guard against undefined/null/empty arrays
-        if (!nodes?.length || !edges?.length) {
-            console.log("No data to render yet");
-            return;
-        }
+        if (!containerRef.current) return;
 
-        const canvas = canvasRef.current;
-        if (!canvas) {
-            console.error("Canvas element not found");
-            return;
-        }
+        // Convert to vis-network format
+        const visNodes = new DataSet(nodes.map(node => ({
+            id: node.id,
+            color: node.state === 1 ? 'red' : 
+                node.state === 2 ? 'green' : 'blue',
+            x: node.x * 1000,
+            y: node.y * 1000
+        })));
 
-        // get the 2D version of the canvas
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-            console.error("Could not get 2D context");
-            return;
-        }
+        const visEdges = new DataSet(edges.map(edge => ({
+            from: edge.source,
+            to: edge.target
+        })));
 
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const options = {
+            physics: {
+                enabled: true,
+                stabilization: false
+            },
+            nodes: {
+                size: 10,
+                borderWidth: 2
+            },
+            edges: {
+                width: 1,
+                color: { opacity: 0.2 }
+            }
+        };
 
-    // Draw nodes
-    nodes.forEach(node => {
-        ctx.beginPath();
-        ctx.arc(
-            node.x * canvas.width, 
-            node.y * canvas.height, 
-            5, 
-            0, 
-            2 * Math.PI
+        // Create network
+        networkRef.current = new Network(
+            containerRef.current,
+            { 
+                nodes: visNodes, 
+                edges: visEdges 
+            },
+            options
         );
-        ctx.fillStyle = node.state === 1 ? 'red' : 'blue';
-        ctx.fill();
-    });
 
-    // Draw edges
-    edges.forEach(edge => {
-        const source = nodes.find(n => n.id === edge.source);
-        const target = nodes.find(n => n.id === edge.target);
-        if (source && target) {
-            ctx.beginPath();
-            ctx.moveTo(source.x * canvas.width, source.y * canvas.height);
-            ctx.lineTo(target.x * canvas.width, target.y * canvas.height);
-            ctx.strokeStyle = 'rgba(200, 200, 200, 0.2)';
-            ctx.stroke();
-        }
-    });
+        return () => {
+            if (networkRef.current) {
+                networkRef.current.destroy();
+                networkRef.current = null;
+            }
+        };
     }, [nodes, edges]);
-    
 
-    // return the canvas element
-    return <canvas 
-        ref={canvasRef} 
-        width={800} 
-        height={600} 
-        style={{ 
-            background: 'black', 
-            border: '1px solid #333',
-            maxWidth: '100%'
-        }} 
-    />;
+    return (
+        <div 
+            ref={containerRef} 
+            style={{ 
+                height: '600px', 
+                width: '100%',
+                background: 'black',
+                border: '1px solid #333'
+            }} 
+        />
+    );
 };
