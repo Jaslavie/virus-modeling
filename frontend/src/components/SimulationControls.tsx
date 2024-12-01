@@ -15,7 +15,7 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
     onParamChange,
 }) => {
     return(
-        <Paper sx={{padding: 2}}>
+        <Box sx={{padding: 2, outline: '1px gray'}}>
             <Typography variant="h6" gutterBottom>
                 Simulation Controls
             </Typography>
@@ -42,7 +42,7 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
                 />
             </Box>
 
-        </Paper>
+        </Box>
     )
 
 }

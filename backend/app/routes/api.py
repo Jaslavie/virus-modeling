@@ -27,9 +27,12 @@ async def simulation_websocket(websocket: WebSocket):
     sim = VirusSimulation()
     running = True
     
-    try:
-        while running:
-            try:
+    async def receive_message():
+        """ 
+        asynchrnously handle messages
+        """
+        try:
+            while running:
                 # Check for any pending messages without blocking
                 data = await websocket.receive_json()
                 
@@ -40,19 +43,34 @@ async def simulation_websocket(websocket: WebSocket):
                         infection_rate=data["infection_rate"],
                         recovery_rate=data["recovery_rate"]
                     )
-            except:
-                ## handle empty messages
-                pass
+        except WebSocketDisconnect:
+            ## handle empty messages
+            return
             
-            # Always step the simulation and send updates
-            state_data = sim.step()
-            await websocket.send_json(state_data)
-            await asyncio.sleep(0.1)  # Small delay between updates
-                
-    except WebSocketDisconnect:
-        running = False
+    try:
+        # start message receiving in the background
+        receive_task = asyncio.create_task(receive_message())
+
+        # simulation loop
+        while running:
+            try:
+                state_data = sim.step() # state of simulation at a single time step
+                await websocket.send_json(state_data)
+                await asyncio.sleep(0.1)
+            except WebSocketDisconnect:
+                running = False
+                break
+            except Exception as e:
+                print(f"Error in simulation: {e}")
+                continue
+    except Exception as e:
+        print(f"Websocket error: {e}")
     finally:
+        running = False # stop the simulation running 
+        receive_task.cancel()
         await manager.disconnect(websocket)
+        print("websocket has successfully disconnected")
+
 
 @router.get("/sir")
 async def get_sir_data(
