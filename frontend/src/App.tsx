@@ -9,7 +9,7 @@ function App() {
   // initialize the simulation parameters
   const [params, setParams] = useState<SimulationParams>({
     population: 100,
-    initial_infected: 5,
+    initial_infected: 50,
     infection_rate: 0.3,
     recovery_rate: 0.1,
   });
@@ -47,7 +47,12 @@ function App() {
           }));
         }
       },
-      (error: Event) => console.error('WebSocket error:', error)
+      params,
+      // callback functions
+      {
+        onError: (error: Event) => console.error('WebSocket error:', error),
+        onConnectionChange: (connected: boolean) => setIsConnected(connected)
+      }
     );
 
     return () => {
@@ -56,7 +61,7 @@ function App() {
         setIsConnected(false);
       }
     }
-  }, []);
+  }, [params]);
 
   // handle parameter changes
   const handleParamChange = (param: keyof SimulationParams, value: number) => {

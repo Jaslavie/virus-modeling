@@ -73,8 +73,8 @@ class VirusSimulation:
             nodes.append({
                 'id': i,
                 'state': int(self.states[i]),
-                'x': self.pos[i][0],
-                'y': self.pos[i][1]
+                'x': float(self.pos[i][0]),
+                'y': float(self.pos[i][1])
             })
         
         # get edge data

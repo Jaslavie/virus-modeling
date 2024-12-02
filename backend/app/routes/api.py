@@ -20,56 +20,72 @@ manager = ConnectionManager()
 
 @router.websocket("/ws/simulation") # websocket endpoint to handle simulation updates
 async def simulation_websocket(websocket: WebSocket):
-    """ 
-    websocket endpoint to handle simulation updates in real-time
-    """
+    print("New WebSocket connection attempt")
     await manager.connect(websocket)
-    sim = VirusSimulation()
+    print("WebSocket connected successfully")
+    
+    # Create initial simulation
+    sim = None
     running = True
     
     async def receive_message():
-        """ 
-        asynchrnously handle messages
-        """
+        nonlocal sim  # Allow modification of sim variable
         try:
             while running:
                 # Check for any pending messages without blocking
                 data = await websocket.receive_json()
+                print(f"Received message from client: {data}")
                 
                 if data["type"] == "UPDATE_PARAMS":
+                    print("Creating new simulation with params:", data)
                     sim = VirusSimulation(
                         population=data["population"],
                         initial_infected=data["initial_infected"],
                         infection_rate=data["infection_rate"],
                         recovery_rate=data["recovery_rate"]
                     )
+                    print("New simulation created successfully")
         except WebSocketDisconnect:
-            ## handle empty messages
+            print("WebSocket disconnected in receive_message")
+            return
+        except Exception as e:
+            print(f"Error in receive_message: {e}")
             return
             
     try:
         # start message receiving in the background
         receive_task = asyncio.create_task(receive_message())
+        print("Started receive_message task")
 
         # simulation loop
         while running:
             try:
-                state_data = sim.step() # state of simulation at a single time step
+                await asyncio.sleep(0.1)  # sleep at the start of the loop to avoid blocking
+                
+                if not sim:  # Skip if simulation hasn't been initialized
+                    print("Waiting for simulation initialization...")
+                    continue
+                    
+                state_data = sim.step()
+                print("Step completed, sending data")
                 await websocket.send_json(state_data)
-                await asyncio.sleep(0.1)
+                
             except WebSocketDisconnect:
-                running = False
+                print("WebSocket disconnected in main loop")
                 break
             except Exception as e:
-                print(f"Error in simulation: {e}")
-                continue
-    except Exception as e:
-        print(f"Websocket error: {e}")
+                print(f"Error in simulation loop: {e}")
+                print(f"Error details: {str(e)}")
+                break
+                
     finally:
-        running = False # stop the simulation running 
+        running = False
         receive_task.cancel()
-        await manager.disconnect(websocket)
-        print("websocket has successfully disconnected")
+        try:
+            await manager.disconnect(websocket)
+        except Exception as e:
+            print(f"Error during disconnect: {e}")
+        print("WebSocket disconnected cleanly")
 
 
 @router.get("/sir")
